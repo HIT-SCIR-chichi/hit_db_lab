@@ -13,51 +13,112 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon('./lab1/src/system.png'))
 
     def stu_insert(self):  # 新建学生信息
-        num, name = ui.stu_num.text(), ui.stu_name.text()
-        if not num or not name:
-            QMessageBox.warning(self, '警告', '学号或姓名为空')
-        elif not num.isdigit() or len(num) != 10:
-            QMessageBox.warning(self, '警告', '只可为10位数字')
-        else:  # todo 考虑完整性约束
+        num, name, c_num = ui.stu_num.text(), ui.stu_name.text(), ui.class_num.text()
+        if not num or not name or not c_num:
+            QMessageBox.warning(self, '警告', '请输入学号、姓名与班号')
+        elif not num.isdigit() or len(num) != 10 or not c_num.isdigit() or len(c_num) != 3:
+            QMessageBox.warning(self, '警告', '学号为10位数字，班号为3位数字')
+        else:
             query = 'select * from student where num=%s'
             if cur.execute(query, [num]):
-                QMessageBox.warning(self, '学号已存在', '该学号已存在，请重新输入')
+                QMessageBox.warning(self, '插入异常', '该学号已存在，请重新输入')
+            elif not cur.execute('select * from class where num=%s', [c_num]):
+                QMessageBox.warning(self, '插入异常', '该班号在班级表中不存在，请尝试在班级表中插入对应条目')
             else:
                 QMessageBox.information(self, '操作成功', '成功插入一条学生数据')
-                query = 'insert into student(num,name) values (%s,%s)'
-                cur.execute(query, [num, name])
+                query = 'insert into student(num,name,c_num) values (%s,%s,%s)'
+                cur.execute(query, [num, name, c_num])
                 con.commit()  # 修改数据时，需要commit操作
 
     def stu_delete(self):  # 删除学生信息
         num = ui.stu_num.text()
         if not num:
-            QMessageBox.warning(self, '警告', '学号或姓名为空')
+            QMessageBox.warning(self, '警告', '学号为空')
         elif not num.isdigit() or len(num) != 10:
-            QMessageBox.warning(self, '警告', '只可为10位数字')
-        else:  # todo 考虑完整性约束
+            QMessageBox.warning(self, '警告', '学号只可为10位数字')
+        else:
             query = 'select * from student where num=%s'
             if not cur.execute(query, [num]):
-                QMessageBox.warning(self, "学号不存在", "该学号不存在，请重新输入")
+                QMessageBox.warning(self, "删除异常", "该学号不存在，请重新输入")
+            elif cur.execute('select * from sc where snum =%s', [num]):
+                QMessageBox.warning(self, "删除异常", "该学号正被选课表作为外键引用，请尝试删除对应条目")
             else:
                 QMessageBox.information(self, '操作成功', '成功删除一条学生数据')
                 query = 'delete from student where num=%s'
                 cur.execute(query, [num])
                 con.commit()  # 修改数据时，需要commit操作
 
-    def get_grade(self):  # 删除学生信息
-        s_num = ui.sc_snum.text()
-        c_num = ui.sc_cnum.text()
-        if not s_num or not c_num:
-            QMessageBox.warning(self, '警告', '学号或课程号为空')
-        elif not s_num.isdigit() or len(s_num) != 10 or not c_num.isdigit():
-            QMessageBox.warning(self, '警告', '学号只可为10位数字，课程号只可为数字')
+    def course_insert(self):  # 新建学生信息
+        num, name, t_num = ui.course_num.text(), ui.course_name.text(), ui.teacher_num.text()
+        if not num or not name or not t_num:
+            QMessageBox.warning(self, '警告', '请输入课程号、课程名和任课教师号')
+        elif not num.isdigit() or len(num) != 3 or not num.isdigit() or len(t_num) != 10:
+            QMessageBox.warning(self, '警告', '课程号为3位数字，教师号为10位数字')
         else:
-            query = 'select student.name, grade.grade from student,grade where snum=%s and cnum=%s'
-            if not cur.execute(query, [s_num, c_num]):
-                QMessageBox.Warning(self, '操作失败', '无法找到该选课信息')
+            query = 'select * from course where num=%s'
+            if cur.execute(query, [num]):
+                QMessageBox.warning(self, '插入异常', '该课程号已存在，请重新输入')
+            elif not cur.execute('select * from teacher where num=%s', [t_num]):
+                QMessageBox.warning(self, '插入异常', '该教师号在教师表中不存在，请尝试在教师表中插入对应条目')
             else:
-                res = cur.fetchone()
-                print(res)
+                QMessageBox.information(self, '操作成功', '成功插入一条课程数据')
+                query = 'insert into course(num,name,t_num) values (%s,%s,%s)'
+                cur.execute(query, [num, name, t_num])
+                con.commit()  # 修改数据时，需要commit操作
+
+    def course_delete(self):  # 删除学生信息
+        num = ui.course_num.text()
+        if not num:
+            QMessageBox.warning(self, '警告', '课程号为空')
+        elif not num.isdigit() or len(num) != 3:
+            QMessageBox.warning(self, '警告', '课程号只可为3位数字')
+        else:  # todo 考虑完整性约束
+            query = 'select * from course where num=%s'
+            if not cur.execute(query, [num]):
+                QMessageBox.warning(self, "删除异常", "该课程号不存在，请重新输入")
+            elif cur.execute('select * from sc where cnum=%s', [num]):
+                QMessageBox.warning(self, "删除异常", "该课程号正被选课表作为外键引用，请尝试删除对应条目")
+            else:
+                QMessageBox.information(self, '操作成功', '成功删除一条课程数据')
+                query = 'delete from course where num=%s'
+                cur.execute(query, [num])
+                con.commit()  # 修改数据时，需要commit操作
+
+    def sc_insert(self):  # 新建信息
+        s_num, c_num, grade = ui.sc_snum.text(), ui.sc_cnum.text(), ui.sc_grade.text()
+        if not s_num or not c_num:
+            QMessageBox.warning(self, '警告', '请输入学号课程号')
+        elif not s_num.isdigit() or len(s_num) != 10 or not c_num.isdigit() or len(c_num) != 3:
+            QMessageBox.warning(self, '警告', '学号为10为数字，课程号为3位数字')
+        else:
+            query = 'select * from sc where snum=%s and cnum=%s'
+            if cur.execute(query, [s_num, c_num]):
+                QMessageBox.warning(self, '插入异常', '该选课信息已存在，请重新输入')
+            elif not cur.execute('select * from student where num=%s', [s_num]):
+                QMessageBox.warning(self, '插入异常', '该学号在学生表中不存在，请尝试在学生表中插入对应条目')
+            elif not cur.execute('select * from course where num=%s', [c_num]):
+                QMessageBox.warning(self, '插入异常', '该课程号在课程表中不存在，请尝试在课程表中插入对应条目')
+            else:
+                QMessageBox.information(self, '操作成功', '成功插入一条学生数据')
+                query = 'insert into sc(snum,cnum,grade) values (%s,%s,%s)'
+                cur.execute(query, [s_num, c_num, grade])
+                con.commit()  # 修改数据时，需要commit操作
+
+    def sc_delete(self):  # 删除信息
+        s_num, c_num = ui.sc_snum.text(), ui.sc_cnum.text()
+        if not s_num or not c_num:
+            QMessageBox.warning(self, '警告', '请输入学号课程号')
+        elif not s_num.isdigit() or len(s_num) != 10 or not c_num.isdigit() or len(c_num) != 3:
+            QMessageBox.warning(self, '警告', '学号为10为数字，课程号为3位数字')
+        else:
+            query = 'select * from sc where snum=%s and cnum=%s'
+            if not cur.execute(query, [s_num, c_num]):
+                QMessageBox.warning(self, "删除异常", "该选课信息不存在，请重新输入")
+            else:
+                QMessageBox.information(self, '操作成功', '成功删除一条选课信息')
+                query = 'delete from sc where snum=%s and cnum=%s'
+                cur.execute(query, [s_num, c_num])
+                con.commit()  # 修改数据时，需要commit操作
 
 
 if __name__ == "__main__":
