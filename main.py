@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt5.QtGui import QIcon
 from lab1 import gui
 import pymysql
 import sys
@@ -151,6 +151,29 @@ class MainWindow(QMainWindow):
             for item in cur.fetchall():
                 res.append(item[0] + '\t' + str(item[1]))
             QMessageBox.information(self, '成功', '\n'.join(res) if len(res) != 0 else '无结果')
+
+    def create_view(self):
+        d_name = ui.cs_department.currentText()
+        view_name = 'cs_student' + str(ui.cs_department.currentIndex())
+        query = 'select count(*) from information_schema.VIEWS where TABLE_SCHEMA="teaching_management_system" and TABLE_NAME=%s'
+        cur.execute(query, [view_name])  # 先查询视图是否已被定义
+        if cur.fetchone()[0] == 1:
+            QMessageBox.information(self, '警告', '视图已被定义：' + view_name)
+        else:
+            query = 'create view ' + view_name + ' as select num,name,c_num from student where c_num in (select c_num from class where d_num in (select d_num from department where c_num="001" and name=%s))'
+            cur.execute(query, [d_name])
+            QMessageBox.information(self, '成功', '成功创建视图：' + view_name)
+
+    def create_index(self):
+        index = ui.cs_index.currentText().split()[0]
+        query = 'select count(*) from information_schema.INNODB_INDEXES where NAME=%s'
+        cur.execute(query, [index + '_index'])  # 先查询视图是否已被定义
+        if cur.fetchone()[0] == 1:
+            QMessageBox.information(self, '警告', '索引已被定义：' + index)
+        else:
+            query = 'create index ' + index + '_index on student(' + index + ' desc) '
+            cur.execute(query)
+            QMessageBox.information(self, '成功', '成功创建索引：' + index + '_index')
 
 
 if __name__ == "__main__":
