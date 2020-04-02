@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog
 from PyQt5.QtGui import QIcon
-from lab1 import gui
+from lab1 import gui, transaction, trigger
 import pymysql
 import sys
 
@@ -174,6 +174,31 @@ class MainWindow(QMainWindow):
             query = 'create index ' + index + '_index on student(' + index + ' desc) '
             cur.execute(query)
             QMessageBox.information(self, '成功', '成功创建索引：' + index + '_index')
+
+    def transaction_dialog(self):
+        dialog = QDialog(self)
+        dialog_ui = transaction.Ui_dialog()
+        dialog_ui.setupUi(dialog)
+        dialog.show()
+
+    def trigger_dialog(self):
+        dialog = QDialog(self)
+        dialog_ui = trigger.Ui_trigger_dialog()
+        dialog_ui.setupUi(dialog)
+        dialog.show()
+        dialog_ui
+
+    def transfer_transaction(self):
+        con.begin()  # 开启事务
+
+        try:
+            print('开始')
+        except Exception as e:
+            print(e)
+            con.rollback()
+        else:
+            con.commit()
+            print('成功')
 
 
 if __name__ == "__main__":

@@ -744,7 +744,8 @@
          <enum>QFrame::Box</enum>
         </property>
         <property name="text">
-         <string>视图与索引</string>
+         <string>视图与索引
+事务与触发器</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -943,11 +944,12 @@
          </sizepolicy>
         </property>
         <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_10"/>
        </widget>
       </item>
      </layout>
@@ -978,9 +980,17 @@
      <string>选课表</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menu_more">
+    <property name="title">
+     <string>附加功能</string>
+    </property>
+    <addaction name="action_transaction"/>
+    <addaction name="action_trigger"/>
+   </widget>
    <addaction name="stu_menu"/>
    <addaction name="teacher_menu"/>
    <addaction name="sc_menu"/>
+   <addaction name="menu_more"/>
   </widget>
   <action name="action1">
    <property name="text">
@@ -1045,6 +1055,16 @@
   <action name="actiontodo">
    <property name="text">
     <string>学生表</string>
+   </property>
+  </action>
+  <action name="action_transaction">
+   <property name="text">
+    <string>事务管理</string>
+   </property>
+  </action>
+  <action name="action_trigger">
+   <property name="text">
+    <string>触发器</string>
    </property>
   </action>
  </widget>
@@ -1242,6 +1262,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>action_transaction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>transaction_dialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>437</x>
+     <y>315</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>action_trigger</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>trigger_dialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>437</x>
+     <y>315</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>stu_insert()</slot>
@@ -1255,5 +1307,7 @@
   <slot>get_avg_grade()</slot>
   <slot>create_view()</slot>
   <slot>create_index()</slot>
+  <slot>transaction_dialog()</slot>
+  <slot>trigger_dialog()</slot>
  </slots>
 </ui>
