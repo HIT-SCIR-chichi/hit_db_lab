@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
             elif not cur.execute('select * from class where num=%s', [c_num]):
                 QMessageBox.warning(self, '插入异常', '该班号在班级表中不存在，请尝试在班级表中插入对应条目')
             else:
-                QMessageBox.information(self, '操作成功', '成功插入一条学生数据')
+                QMessageBox.information(self, '成功', '成功插入一条学生数据')
                 query = 'insert into student(num,name,c_num) values (%s,%s,%s)'
                 cur.execute(query, [num, name, c_num])
                 con.commit()  # 修改数据时，需要commit操作
@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
             elif cur.execute('select * from sc where snum =%s', [num]):
                 QMessageBox.warning(self, "删除异常", "该学号正被选课表作为外键引用，请尝试删除对应条目")
             else:
-                QMessageBox.information(self, '操作成功', '成功删除一条学生数据')
+                QMessageBox.information(self, '成功', '成功删除一条学生数据')
                 query = 'delete from student where num=%s'
                 cur.execute(query, [num])
                 con.commit()  # 修改数据时，需要commit操作
@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
             elif not cur.execute('select * from teacher where num=%s', [t_num]):
                 QMessageBox.warning(self, '插入异常', '该教师号在教师表中不存在，请尝试在教师表中插入对应条目')
             else:
-                QMessageBox.information(self, '操作成功', '成功插入一条课程数据')
+                QMessageBox.information(self, '成功', '成功插入一条课程数据')
                 query = 'insert into course(num,name,t_num) values (%s,%s,%s)'
                 cur.execute(query, [num, name, t_num])
                 con.commit()  # 修改数据时，需要commit操作
@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
             elif cur.execute('select * from sc where cnum=%s', [num]):
                 QMessageBox.warning(self, "删除异常", "该课程号正被选课表作为外键引用，请尝试删除对应条目")
             else:
-                QMessageBox.information(self, '操作成功', '成功删除一条课程数据')
+                QMessageBox.information(self, '成功', '成功删除一条课程数据')
                 query = 'delete from course where num=%s'
                 cur.execute(query, [num])
                 con.commit()  # 修改数据时，需要commit操作
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
             elif not cur.execute('select * from course where num=%s', [c_num]):
                 QMessageBox.warning(self, '插入异常', '该课程号在课程表中不存在，请尝试在课程表中插入对应条目')
             else:
-                QMessageBox.information(self, '操作成功', '成功插入一条学生数据')
+                QMessageBox.information(self, '成功', '成功插入一条学生数据')
                 query = 'insert into sc(snum,cnum,grade) values (%s,%s,%s)'
                 cur.execute(query, [s_num, c_num, grade])
                 con.commit()  # 修改数据时，需要commit操作
@@ -115,10 +115,42 @@ class MainWindow(QMainWindow):
             if not cur.execute(query, [s_num, c_num]):
                 QMessageBox.warning(self, "删除异常", "该选课信息不存在，请重新输入")
             else:
-                QMessageBox.information(self, '操作成功', '成功删除一条选课信息')
+                QMessageBox.information(self, '成功', '成功删除一条选课信息')
                 query = 'delete from sc where snum=%s and cnum=%s'
                 cur.execute(query, [s_num, c_num])
                 con.commit()  # 修改数据时，需要commit操作
+
+    def get_name(self):
+        c_count, res = int(ui.sc_stu_count.text()), []
+        query = 'select student.name from student,sc where student.num = sc.snum group by student.num HAVING count(*) > %s'
+        cur.execute(query, [c_count])
+        for item in cur.fetchall():
+            res.append(item[0])
+        QMessageBox.information(self, '成功', ' '.join(res) if len(res) > 0 else '无结果')
+
+    def get_name_by_cnum(self):
+        c_num, res = ui.sc_stu_cnum.text(), []
+        if not c_num:
+            QMessageBox.warning(self, '警告', '请输入课程号')
+        elif not c_num.isdigit() or len(c_num) != 3:
+            QMessageBox.warning(self, '警告', '班号为3位数字')
+        else:
+            query = 'select name from student where num in (select snum from sc where cnum = %s)'
+            cur.execute(query, [c_num])
+            for item in cur.fetchall():
+                res.append(item[0])
+            QMessageBox.information(self, '成功', ' '.join(res) if len(res) > 0 else '无结果')
+
+    def get_avg_grade(self):
+        name, res = ui.sc_stu_sname.text(), []
+        if not name:
+            QMessageBox.warning(self, '警告', '请输入姓名')
+        else:
+            query = 'select snum, avg(grade) from sc where snum in (select num from student where name = %s)  and grade >= 60 group by snum'
+            cur.execute(query, [name])
+            for item in cur.fetchall():
+                res.append(item[0] + '\t' + str(item[1]))
+            QMessageBox.information(self, '成功', '\n'.join(res) if len(res) != 0 else '无结果')
 
 
 if __name__ == "__main__":
