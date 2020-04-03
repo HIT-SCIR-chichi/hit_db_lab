@@ -12,6 +12,18 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowIcon(QIcon('src/system.png'))
 
+    def update_c_num_combobox(self):
+        ui.c_num_combobox.clear()
+        cur.execute('select num from course order by num asc')
+        items = [item[0] for item in cur.fetchall()]
+        ui.c_num_combobox.addItems(items)
+
+    def update_s_name_combobox(self):
+        ui.stu_name_combobox.clear()
+        cur.execute('select num, name from student order by num asc')
+        items = [item[0] + ' ' + item[1] for item in cur.fetchall()]
+        ui.stu_name_combobox.addItems(items)
+
     def stu_insert(self):  # 新建学生信息
         num, name, c_num = ui.stu_num.text(), ui.stu_name.text(), ui.class_num.text()
         if not num or not name or not c_num:
@@ -29,6 +41,7 @@ class MainWindow(QMainWindow):
                 query = 'insert into student(num,name,c_num) values (%s,%s,%s)'
                 cur.execute(query, [num, name, c_num])
                 con.commit()  # 修改数据时，需要commit操作
+                self.update_s_name_combobox()
 
     def stu_delete(self):  # 删除学生信息
         num, trigger_on = ui.stu_num.text(), ui.add_trigger.isChecked()
@@ -49,6 +62,7 @@ class MainWindow(QMainWindow):
                 query = 'delete from student where num=%s'
                 cur.execute(query, [num])
                 con.commit()  # 修改数据时，需要commit操作
+                self.update_s_name_combobox()
 
     def course_insert(self):  # 新建学生信息
         num, name, t_num = ui.course_num.text(), ui.course_name.text(), ui.teacher_num.text()
@@ -67,6 +81,7 @@ class MainWindow(QMainWindow):
                 query = 'insert into course(num,name,t_num) values (%s,%s,%s)'
                 cur.execute(query, [num, name, t_num])
                 con.commit()  # 修改数据时，需要commit操作
+                self.update_c_num_combobox()
 
     def course_delete(self):  # 删除学生信息
         num, trigger_on = ui.course_num.text(), ui.add_trigger.isChecked()
@@ -87,6 +102,7 @@ class MainWindow(QMainWindow):
                 query = 'delete from course where num=%s'
                 cur.execute(query, [num])
                 con.commit()  # 修改数据时，需要commit操作
+                self.update_c_num_combobox()
 
     def sc_insert(self):  # 新建信息，加入触发器
         s_num, c_num, grade = ui.sc_snum.text(), ui.sc_cnum.text(), ui.sc_grade.text()
@@ -114,6 +130,8 @@ class MainWindow(QMainWindow):
                 query = 'insert into sc(snum,cnum,grade) values (%s,%s,%s)'
                 cur.execute(query, [s_num, c_num, grade])
                 con.commit()  # 修改数据时，需要commit操作
+                self.update_s_name_combobox()
+                self.update_c_num_combobox()
 
     def sc_delete(self):  # 删除信息，加入触发器
         s_num, c_num = ui.sc_snum.text(), ui.sc_cnum.text()
@@ -130,6 +148,8 @@ class MainWindow(QMainWindow):
                 query = 'delete from sc where snum=%s and cnum=%s'
                 cur.execute(query, [s_num, c_num])
                 con.commit()  # 修改数据时，需要commit操作
+                self.update_s_name_combobox()
+                self.update_c_num_combobox()
 
     def get_name(self):
         c_count, res = int(ui.sc_stu_count.text()), []
@@ -140,7 +160,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, '成功', ' '.join(res) if len(res) > 0 else '无结果')
 
     def get_name_by_cnum(self):
-        c_num, res = ui.sc_stu_cnum.text(), []
+        c_num, res = ui.c_num_combobox.currentText(), []
         if not c_num:
             QMessageBox.warning(self, '警告', '请输入课程号')
         elif not c_num.isdigit() or len(c_num) != 3:
@@ -153,7 +173,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, '成功', ' '.join(res) if len(res) > 0 else '无结果')
 
     def get_avg_grade(self):
-        name, res = ui.sc_stu_sname.text(), []
+        name, res = ui.stu_name_combobox.currentText().split()[1], []
         if not name:
             QMessageBox.warning(self, '警告', '请输入姓名')
         else:
@@ -257,6 +277,8 @@ if __name__ == "__main__":
     main_win = MainWindow()
     ui = gui.Ui_MainWindow()
     ui.setupUi(main_win)
+    main_win.update_c_num_combobox()
+    main_win.update_s_name_combobox()
 
     main_win.show()
     sys.exit(app.exec_())

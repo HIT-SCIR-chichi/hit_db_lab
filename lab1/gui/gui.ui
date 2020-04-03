@@ -635,9 +635,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="sc_stu_cnum">
+            <widget class="QComboBox" name="c_num_combobox">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>5</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -702,9 +702,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="sc_stu_sname">
+            <widget class="QComboBox" name="stu_name_combobox">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>5</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
