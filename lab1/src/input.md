@@ -19,10 +19,10 @@ select snum, avg(grade) from sc where snum in (select num from student where nam
 - 7，创建视图、建立索引（健壮性+重复索引提示）
 - 8，事务管理：转账（模拟异常开启、转账数目过多）
 ```mysql
-begin()
+begin
 'update student set balance=balance-' + (transfer_num) + ' where num = %s', sender
 'update student set balance=balance+' + transfer_num + ' where num = %s', receiver
-commit()
+commit
 ```
 - 9，触发器：学生表删除、课程表删除、选课表插入完整性
 > 学生表删除触发器：
