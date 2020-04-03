@@ -20,4 +20,4 @@ class Ui_trigger_dialog(object):
 
     def retranslateUi(self, trigger_dialog):
         _translate = QtCore.QCoreApplication.translate
-        trigger_dialog.setWindowTitle(_translate("trigger_dialog", "Dialog"))
+        trigger_dialog.setWindowTitle(_translate("trigger_dialog", "触发器"))

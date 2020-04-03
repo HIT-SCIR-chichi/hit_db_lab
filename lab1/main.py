@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog, QTableWidgetItem, QHeaderView
 from PyQt5.QtGui import QIcon
-from lab1 import gui, transaction, trigger
+from lab1.gui import gui, transaction, trigger
 import pymysql
 import sys
 
@@ -10,7 +10,7 @@ import sys
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowIcon(QIcon('./lab1/src/system.png'))
+        self.setWindowIcon(QIcon('src/system.png'))
 
     def stu_insert(self):  # 新建学生信息
         num, name, c_num = ui.stu_num.text(), ui.stu_name.text(), ui.class_num.text()
@@ -158,7 +158,7 @@ class MainWindow(QMainWindow):
         query = 'select count(*) from information_schema.VIEWS where TABLE_SCHEMA="teaching_management_system" and TABLE_NAME=%s'
         cur.execute(query, [view_name])  # 先查询视图是否已被定义
         if cur.fetchone()[0] == 1:
-            QMessageBox.information(self, '警告', '视图已被定义：' + view_name)
+            QMessageBox.warning(self, '警告', '视图已被定义：' + view_name)
         else:
             query = 'create view ' + view_name + ' as select num,name,c_num from student where c_num in (select c_num from class where d_num in (select d_num from department where c_num="001" and name=%s))'
             cur.execute(query, [d_name])
@@ -169,36 +169,80 @@ class MainWindow(QMainWindow):
         query = 'select count(*) from information_schema.INNODB_INDEXES where NAME=%s'
         cur.execute(query, [index + '_index'])  # 先查询视图是否已被定义
         if cur.fetchone()[0] == 1:
-            QMessageBox.information(self, '警告', '索引已被定义：' + index)
+            QMessageBox.warning(self, '警告', '索引已被定义：' + index)
         else:
             query = 'create index ' + index + '_index on student(' + index + ' desc) '
             cur.execute(query)
             QMessageBox.information(self, '成功', '成功创建索引：' + index + '_index')
 
     def transaction_dialog(self):
-        dialog = QDialog(self)
+        dialog = TransactionDialog(self)
         dialog_ui = transaction.Ui_dialog()
         dialog_ui.setupUi(dialog)
+        dialog.set_ui(dialog_ui)
         dialog.show()
 
     def trigger_dialog(self):
-        dialog = QDialog(self)
+        dialog = TriggerDialog(self)
         dialog_ui = trigger.Ui_trigger_dialog()
         dialog_ui.setupUi(dialog)
+        dialog.set_ui(dialog_ui)
         dialog.show()
-        dialog_ui
 
-    def transfer_transaction(self):
+
+class TransactionDialog(QDialog):
+
+    def set_ui(self, ui):
+        self.ui = ui
+        self.__update_num()
+
+    def __update_num(self):
+        cur.execute('select num,name,balance from student order by num asc')
+        items = cur.fetchall()
+        res = [item[0] + ' ' + str(item[2]) for item in items]
+        self.ui.sender_nums.clear()
+        self.ui.receivers_nums.clear()
+        self.ui.sender_nums.addItems(res)
+        self.ui.receivers_nums.addItems(res)
+        table = self.ui.stu_table
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        table.setRowCount(len(items))
+        table.setColumnCount(3)
+        table.verticalHeader().setVisible(False)
+        table.setHorizontalHeaderLabels(['学号', '姓名', '余额'])
+        for idx, item in enumerate(items):
+            table.setItem(idx, 0, QTableWidgetItem(item[0]))
+            table.setItem(idx, 1, QTableWidgetItem(item[1]))
+            table.setItem(idx, 2, QTableWidgetItem(str(item[2])))
+
+    def begin_transaction(self):
+        is_checked = self.ui.add_exception.isChecked()
         con.begin()  # 开启事务
-
         try:
-            print('开始')
+            sender, s_balance = self.ui.sender_nums.currentText().split()
+            receiver, r_balance = self.ui.receivers_nums.currentText().split()
+            transfer_num = self.ui.transfer_num.text()
+            if sender == receiver or int(s_balance) < int(transfer_num) or is_checked:
+                raise Exception
+            else:
+                QMessageBox.information(self, '提示', '正在转帐')
+                cur.execute('update student set balance=balance-' + (transfer_num) + ' where num = %s', sender)
+                cur.execute('update student set balance=balance+' + transfer_num + ' where num = %s', receiver)
         except Exception as e:
-            print(e)
+            QMessageBox.warning(self, '警告', '数据库接收到错误，开始回退，转账失败')
             con.rollback()
         else:
             con.commit()
-            print('成功')
+            QMessageBox.information(self, '提示', '转账成功')
+        self.__update_num()
+
+
+class TriggerDialog(QDialog):
+    def set_ui(self, ui):
+        self.ui = ui
+
+    def do_some(self):
+        pass
 
 
 if __name__ == "__main__":
