@@ -102,6 +102,7 @@ class Ui_dialog(object):
 
         self.retranslateUi(dialog)
         self.begin_transfer.clicked.connect(dialog.begin_transaction)
+        self.add_exception.clicked.connect(dialog.change_checkbox)
         QtCore.QMetaObject.connectSlotsByName(dialog)
 
     def retranslateUi(self, dialog):

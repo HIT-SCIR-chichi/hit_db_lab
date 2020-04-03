@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog, QTableWidgetItem, QHeaderView
+from lab1.gui import gui, transaction
 from PyQt5.QtGui import QIcon
-from lab1.gui import gui, transaction, trigger
 import pymysql
 import sys
 
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
                 con.commit()  # 修改数据时，需要commit操作
 
     def stu_delete(self):  # 删除学生信息
-        num = ui.stu_num.text()
+        num, trigger_on = ui.stu_num.text(), ui.add_trigger.isChecked()
         if not num:
             QMessageBox.warning(self, '警告', '学号为空')
         elif not num.isdigit() or len(num) != 10:
@@ -40,9 +40,11 @@ class MainWindow(QMainWindow):
             query = 'select * from student where num=%s'
             if not cur.execute(query, [num]):
                 QMessageBox.warning(self, "删除异常", "该学号不存在，请重新输入")
-            elif cur.execute('select * from sc where snum =%s', [num]):
+            elif cur.execute('select * from sc where snum =%s', [num]) and not trigger_on:
                 QMessageBox.warning(self, "删除异常", "该学号正被选课表作为外键引用，请尝试删除对应条目")
             else:
+                if cur.execute('select * from sc where snum=%s', [num]) and trigger_on:
+                    QMessageBox.information(self, '提示', '该学号正被选课表作为外键引用，触发器已默认删除对应条目数据')
                 QMessageBox.information(self, '成功', '成功删除一条学生数据')
                 query = 'delete from student where num=%s'
                 cur.execute(query, [num])
@@ -67,24 +69,26 @@ class MainWindow(QMainWindow):
                 con.commit()  # 修改数据时，需要commit操作
 
     def course_delete(self):  # 删除学生信息
-        num = ui.course_num.text()
+        num, trigger_on = ui.course_num.text(), ui.add_trigger.isChecked()
         if not num:
             QMessageBox.warning(self, '警告', '课程号为空')
         elif not num.isdigit() or len(num) != 3:
             QMessageBox.warning(self, '警告', '课程号只可为3位数字')
-        else:  # todo 考虑完整性约束
+        else:
             query = 'select * from course where num=%s'
             if not cur.execute(query, [num]):
                 QMessageBox.warning(self, "删除异常", "该课程号不存在，请重新输入")
-            elif cur.execute('select * from sc where cnum=%s', [num]):
+            elif cur.execute('select * from sc where cnum=%s', [num]) and not trigger_on:
                 QMessageBox.warning(self, "删除异常", "该课程号正被选课表作为外键引用，请尝试删除对应条目")
             else:
+                if cur.execute('select * from sc where cnum=%s', [num]) and trigger_on:
+                    QMessageBox.information(self, '提示', '该课程号正被选课表作为外键引用，触发器已默认删除对应条目数据')
                 QMessageBox.information(self, '成功', '成功删除一条课程数据')
                 query = 'delete from course where num=%s'
                 cur.execute(query, [num])
                 con.commit()  # 修改数据时，需要commit操作
 
-    def sc_insert(self):  # 新建信息
+    def sc_insert(self):  # 新建信息，加入触发器
         s_num, c_num, grade = ui.sc_snum.text(), ui.sc_cnum.text(), ui.sc_grade.text()
         if not s_num or not c_num:
             QMessageBox.warning(self, '警告', '请输入学号课程号')
@@ -92,19 +96,26 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, '警告', '学号为10为数字，课程号为3位数字')
         else:
             query = 'select * from sc where snum=%s and cnum=%s'
+            trigger_on = ui.add_trigger.isChecked()  # 触发器是否打开
+            has_s_num, has_c_num = cur.execute('select * from student where num=%s', [s_num]), cur.execute(
+                'select * from course where num=%s', [c_num])  # 学号信息是否存在，班号信息是否存在
             if cur.execute(query, [s_num, c_num]):
                 QMessageBox.warning(self, '插入异常', '该选课信息已存在，请重新输入')
-            elif not cur.execute('select * from student where num=%s', [s_num]):
+            elif not has_s_num and not trigger_on:
                 QMessageBox.warning(self, '插入异常', '该学号在学生表中不存在，请尝试在学生表中插入对应条目')
-            elif not cur.execute('select * from course where num=%s', [c_num]):
+            elif not has_c_num and not trigger_on:
                 QMessageBox.warning(self, '插入异常', '该课程号在课程表中不存在，请尝试在课程表中插入对应条目')
             else:
+                if not has_s_num and trigger_on:
+                    QMessageBox.information(self, '提示', '该学号在课程表中不存在，触发器已默认添加对应条目数据')
+                if not has_c_num and trigger_on:
+                    QMessageBox.information(self, '提示', '该课程号在课程表中不存在，触发器已默认添加对应条目数据')
                 QMessageBox.information(self, '成功', '成功插入一条学生数据')
                 query = 'insert into sc(snum,cnum,grade) values (%s,%s,%s)'
                 cur.execute(query, [s_num, c_num, grade])
                 con.commit()  # 修改数据时，需要commit操作
 
-    def sc_delete(self):  # 删除信息
+    def sc_delete(self):  # 删除信息，加入触发器
         s_num, c_num = ui.sc_snum.text(), ui.sc_cnum.text()
         if not s_num or not c_num:
             QMessageBox.warning(self, '警告', '请输入学号课程号')
@@ -182,12 +193,8 @@ class MainWindow(QMainWindow):
         dialog.set_ui(dialog_ui)
         dialog.show()
 
-    def trigger_dialog(self):
-        dialog = TriggerDialog(self)
-        dialog_ui = trigger.Ui_trigger_dialog()
-        dialog_ui.setupUi(dialog)
-        dialog.set_ui(dialog_ui)
-        dialog.show()
+    def change_combobox(self):
+        ui.add_trigger.setText('触发器：' + ('开' if ui.add_trigger.isChecked() else '关'))
 
 
 class TransactionDialog(QDialog):
@@ -236,13 +243,8 @@ class TransactionDialog(QDialog):
             QMessageBox.information(self, '提示', '转账成功')
         self.__update_num()
 
-
-class TriggerDialog(QDialog):
-    def set_ui(self, ui):
-        self.ui = ui
-
-    def do_some(self):
-        pass
+    def change_checkbox(self):
+        self.ui.add_exception.setText('模拟异常：' + ('开' if self.ui.add_exception.isChecked() else '关'))
 
 
 if __name__ == "__main__":

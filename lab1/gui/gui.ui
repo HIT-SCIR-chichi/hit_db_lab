@@ -6,9 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>875</width>
+    <width>951</width>
     <height>631</height>
    </rect>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::DefaultContextMenu</enum>
   </property>
   <property name="windowTitle">
    <string>教学管理系统@zjr</string>
@@ -18,28 +21,53 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_10">
       <item>
-       <widget class="QLabel" name="label_23">
+       <widget class="QFrame" name="frame_11">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>1</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <property name="styleSheet">
-         <string notr="true"/>
-        </property>
         <property name="frameShape">
-         <enum>QFrame::Box</enum>
+         <enum>QFrame::StyledPanel</enum>
         </property>
         <property name="frameShadow">
-         <enum>QFrame::Plain</enum>
+         <enum>QFrame::Raised</enum>
         </property>
-        <property name="text">
-         <string>修改表</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_11">
+         <item>
+          <widget class="QLabel" name="label_23">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Box</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+           <property name="text">
+            <string>修改表</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="add_trigger">
+           <property name="text">
+            <string>触发器：关</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
@@ -744,8 +772,7 @@
          <enum>QFrame::Box</enum>
         </property>
         <property name="text">
-         <string>视图与索引
-事务与触发器</string>
+         <string>视图与索引</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -961,7 +988,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>875</width>
+     <width>951</width>
      <height>26</height>
     </rect>
    </property>
@@ -982,15 +1009,20 @@
    </widget>
    <widget class="QMenu" name="menu_more">
     <property name="title">
-     <string>附加功能</string>
+     <string>事务管理</string>
     </property>
     <addaction name="action_transaction"/>
-    <addaction name="action_trigger"/>
+   </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>关于</string>
+    </property>
    </widget>
    <addaction name="stu_menu"/>
    <addaction name="teacher_menu"/>
    <addaction name="sc_menu"/>
    <addaction name="menu_more"/>
+   <addaction name="menu"/>
   </widget>
   <action name="action1">
    <property name="text">
@@ -1058,13 +1090,11 @@
    </property>
   </action>
   <action name="action_transaction">
-   <property name="text">
-    <string>事务管理</string>
+   <property name="checkable">
+    <bool>false</bool>
    </property>
-  </action>
-  <action name="action_trigger">
    <property name="text">
-    <string>触发器</string>
+    <string>开始转帐</string>
    </property>
   </action>
  </widget>
@@ -1189,7 +1219,7 @@
    <slot>get_name()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>295</x>
+     <x>305</x>
      <y>416</y>
     </hint>
     <hint type="destinationlabel">
@@ -1205,7 +1235,7 @@
    <slot>get_name_by_cnum()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>605</x>
+     <x>637</x>
      <y>416</y>
     </hint>
     <hint type="destinationlabel">
@@ -1221,7 +1251,7 @@
    <slot>get_avg_grade()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>849</x>
+     <x>903</x>
      <y>416</y>
     </hint>
     <hint type="destinationlabel">
@@ -1237,12 +1267,12 @@
    <slot>create_view()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>292</x>
+     <x>314</x>
      <y>591</y>
     </hint>
     <hint type="destinationlabel">
      <x>301</x>
-     <y>656</y>
+     <y>630</y>
     </hint>
    </hints>
   </connection>
@@ -1253,7 +1283,7 @@
    <slot>create_index()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>674</x>
+     <x>718</x>
      <y>598</y>
     </hint>
     <hint type="destinationlabel">
@@ -1279,18 +1309,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>action_trigger</sender>
-   <signal>triggered()</signal>
+   <sender>add_trigger</sender>
+   <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>trigger_dialog()</slot>
+   <slot>change_combobox()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
+     <x>72</x>
+     <y>198</y>
     </hint>
     <hint type="destinationlabel">
-     <x>437</x>
-     <y>315</y>
+     <x>75</x>
+     <y>224</y>
     </hint>
    </hints>
   </connection>
@@ -1308,6 +1338,6 @@
   <slot>create_view()</slot>
   <slot>create_index()</slot>
   <slot>transaction_dialog()</slot>
-  <slot>trigger_dialog()</slot>
+  <slot>change_combobox()</slot>
  </slots>
 </ui>

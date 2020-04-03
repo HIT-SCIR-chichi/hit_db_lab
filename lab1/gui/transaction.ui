@@ -144,8 +144,8 @@
    <slot>begin_transaction()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>155</x>
-     <y>184</y>
+     <x>179</x>
+     <y>180</y>
     </hint>
     <hint type="destinationlabel">
      <x>155</x>
@@ -153,8 +153,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>add_exception</sender>
+   <signal>clicked()</signal>
+   <receiver>dialog</receiver>
+   <slot>change_checkbox()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>107</x>
+     <y>126</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>79</x>
+     <y>212</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>begin_transaction()</slot>
+  <slot>change_checkbox()</slot>
  </slots>
 </ui>
