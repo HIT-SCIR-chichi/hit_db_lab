@@ -3,7 +3,7 @@
 import os
 from random import randint
 
-disk_dir = './disk/'  # 模拟磁盘所在的目录
+disk_dir = './disk/relation/'  # 模拟磁盘所在的目录
 num_per_blk, r_blk_num, s_blk_num = 7, 16, 32  # 每个磁盘块可以保存的元组数目，关系R的磁盘块数，关系S的磁盘块数
 
 
@@ -56,6 +56,11 @@ def drop_blk(addr: str) -> bool:  # 存在返回真，不存在返回假
     if blk_exists:
         os.remove(blk_path)
     return blk_exists
+
+
+def drop_blk_in_dir(file_dir: str):
+    for file in os.listdir(file_dir):
+        os.remove(file_dir + file)
 
 
 def gene_data():
