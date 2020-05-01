@@ -13,7 +13,7 @@ class Buffer:
         self.all_blk_num = all_blk_num  # 缓冲区中可以保存的块数目
         self.free_blk_num = self.all_blk_num  # 缓冲区中可用的块数目
         self.data_occupy = [False] * self.all_blk_num  # False表示未被占用
-        self.data = [] * self.all_blk_num  # 缓存中按块放置的数据
+        self.data = [[]] * self.all_blk_num  # 缓存中按块放置的数据
 
     def get_new_blk(self) -> int:
         index = self.all_blk_num - self.free_blk_num if self.free_blk_num else -1
@@ -22,32 +22,31 @@ class Buffer:
             self.free_blk_num -= 1
         return index
 
-    def free_blk(self) -> bool:
-        flag = self.all_blk_num < self.free_blk_num
+    def free_blk(self) -> bool:  # 释放缓冲区的一个磁盘块
+        flag = self.all_blk_num > self.free_blk_num
         if flag:
             self.free_blk_num += 1
             self.data_occupy[self.all_blk_num - self.free_blk_num] = False
         return flag
 
-    def load_blk(self, addr: str) -> bool:
+    def load_blk(self, addr: str) -> int:  # 加载磁盘块到缓冲区中
         blk_path = disk_dir + addr + '.blk'
-        flag = self.all_blk_num < self.free_blk_num and os.path.exists(blk_path)
-        index = self.all_blk_num - self.free_blk_num if flag else -1
-        if flag:
+        index = self.all_blk_num - self.free_blk_num if self.free_blk_num and os.path.exists(blk_path) else -1
+        if index != -1:
             with open(blk_path) as f:
                 self.data_occupy[index] = True
-                self.data[index] = f.read()
+                self.data[index] = f.read().split('\n')
                 self.free_blk_num -= 1
                 self.io_num += 1
-        return flag
+        return index
 
-    def write_blk(self, addr):
+    def write_blk(self, addr):  # 将缓冲区中数据写入磁盘块
         blk_path = disk_dir + addr + '.blk'
         with open(blk_path) as f:
             self.io_num += 1
             self.free_blk_num += 1
             self.data_occupy[self.all_blk_num - self.free_blk_num] = False
-            f.write(self.data[self.all_blk_num - self.free_blk_num])
+            f.write('\n'.join(self.data[self.all_blk_num - self.free_blk_num]))
             return True
 
 
