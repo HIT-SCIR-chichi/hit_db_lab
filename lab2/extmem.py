@@ -8,9 +8,9 @@ tuple_num, blk_num1, blk_num2 = 7, 16, 32  # 每个磁盘块可以保存的元�
 
 
 class Buffer:
-    def __init__(self, all_blk_num: int = 8):
+    def __init__(self, blk_num: int = 8):
         self.io_num = 0  # 磁盘IO次数
-        self.blk_num = all_blk_num  # 缓冲区中可以保存的块数目
+        self.blk_num = blk_num  # 缓冲区中可以保存的块数目
         self.free_blk_num = self.blk_num  # 缓冲区中可用的块数目
         self.data_occupy = [False] * self.blk_num  # False表示未被占用
         self.data = [[]] * self.blk_num  # 缓存中按块放置的数据，数据为str类型
