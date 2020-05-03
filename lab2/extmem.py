@@ -4,50 +4,55 @@ import os
 from random import randint
 
 disk_dir = './disk/relation/'  # 模拟磁盘所在的目录
-num_per_blk, r_blk_num, s_blk_num = 7, 16, 32  # 每个磁盘块可以保存的元组数目，关系R的磁盘块数，关系S的磁盘块数
+tuple_num, blk_num1, blk_num2 = 7, 16, 32  # 每个磁盘块可以保存的元组数目，关系R的磁盘块数，关系S的磁盘块数
 
 
 class Buffer:
-    def __init__(self, all_blk_num: int):
+    def __init__(self, all_blk_num: int = 8):
         self.io_num = 0  # 磁盘IO次数
-        self.all_blk_num = all_blk_num  # 缓冲区中可以保存的块数目
-        self.free_blk_num = self.all_blk_num  # 缓冲区中可用的块数目
-        self.data_occupy = [False] * self.all_blk_num  # False表示未被占用
-        self.data = [[]] * self.all_blk_num  # 缓存中按块放置的数据
+        self.blk_num = all_blk_num  # 缓冲区中可以保存的块数目
+        self.free_blk_num = self.blk_num  # 缓冲区中可用的块数目
+        self.data_occupy = [False] * self.blk_num  # False表示未被占用
+        self.data = [[]] * self.blk_num  # 缓存中按块放置的数据，数据为str类型
 
-    def get_new_blk(self) -> int:
-        index = self.all_blk_num - self.free_blk_num if self.free_blk_num else -1
-        if self.free_blk_num:
-            self.data_occupy[index] = True
-            self.free_blk_num -= 1
-        return index
+    def get_free_blk(self) -> int:
+        for idx, flag in enumerate(self.data_occupy):
+            if not flag:
+                self.data_occupy[idx] = True
+                self.free_blk_num -= 1
+                return idx
+        return -1
 
-    def free_blk(self) -> bool:  # 释放缓冲区的一个磁盘块
-        flag = self.all_blk_num > self.free_blk_num
+    def free_blk(self, index) -> bool:  # 释放缓冲区的一个磁盘块
+        flag = self.data_occupy[index]
         if flag:
             self.free_blk_num += 1
-            self.data_occupy[self.all_blk_num - self.free_blk_num] = False
+            self.data_occupy[index] = False
         return flag
 
-    def load_blk(self, addr: str) -> int:  # 加载磁盘块到缓冲区中
-        blk_path = disk_dir + addr + '.blk'
-        index = self.all_blk_num - self.free_blk_num if self.free_blk_num and os.path.exists(blk_path) else -1
+    def load_blk(self, addr: str) -> int:  # 加载磁盘块到缓冲区中，输入参数形如'./disk/relation/r15.blk'
+        index = self.get_free_blk()
         if index != -1:
-            with open(blk_path) as f:
+            with open(addr) as f:
                 self.data_occupy[index] = True
                 self.data[index] = f.read().split('\n')
-                self.free_blk_num -= 1
                 self.io_num += 1
         return index
 
-    def write_blk(self, addr):  # 将缓冲区中数据写入磁盘块
-        blk_path = disk_dir + addr + '.blk'
-        with open(blk_path) as f:
+    def write_blk(self, addr, index):  # 将缓冲区中数据写入磁盘块
+        with open(addr, 'w') as f:
             self.io_num += 1
             self.free_blk_num += 1
-            self.data_occupy[self.all_blk_num - self.free_blk_num] = False
-            f.write('\n'.join(self.data[self.all_blk_num - self.free_blk_num]))
+            self.data_occupy[index] = False
+            f.write('\n'.join(self.data[index]))
             return True
+
+    def write_buffer(self, data_lst: list, addr):  # 将CPU处理后的数据暂存入缓冲区，再存入磁盘
+        index = self.get_free_blk()
+        if index != -1:
+            self.data[index] = data_lst
+            self.write_blk(addr, index)
+        return index != -1
 
 
 def drop_blk(addr: str) -> bool:  # 存在返回真，不存在返回假
@@ -64,7 +69,8 @@ def drop_blk_in_dir(file_dir: str):
 
 
 def gene_data():
-    all_data, item = [([], set(), r_blk_num * num_per_blk, 1, 40), ([], set(), s_blk_num * num_per_blk, 20, 60)], None
+    drop_blk_in_dir(disk_dir)
+    all_data, item = [([], set(), blk_num1 * tuple_num, 1, 40), ([], set(), blk_num2 * tuple_num, 20, 60)], None
     for data in all_data:
         for idx in range(data[2]):  # data[2]保存的是关系元组数目
             while True:
@@ -77,11 +83,11 @@ def gene_data():
 
 
 def write_disk(r_lst: list, s_lst: list):
-    all_data = [('r', r_blk_num, r_lst), ('s', s_blk_num, s_lst)]
+    all_data = [('r', blk_num1, r_lst), ('s', blk_num2, s_lst)]
     for data in all_data:  # 将关系实例写入模拟磁盘
         for idx in range(data[1]):
             with open('%s%s%d.blk' % (disk_dir, data[0], idx), 'w') as f:
-                blk_data = ['%d %d' % item for item in data[2][idx * num_per_blk:(idx + 1) * num_per_blk]]
+                blk_data = ['%d %d' % item for item in data[2][idx * tuple_num:(idx + 1) * tuple_num]]
                 f.write('\n'.join(blk_data))
 
 
