@@ -1,70 +1,75 @@
 # !/usr/bin/python
 # -*- coding: utf-8 -*-
-from lab2.extmem import disk_dir, tuple_num, blk_num2, blk_num1
+
+from lab2.extmem import disk_dir, tuple_num, blk_num2, blk_num1, Buffer
 from math import ceil, floor
 from lab2 import extmem
 
+nlj_dir, blk_num = './disk/join/nlj/', 8  # 关系连接磁盘目录，缓冲区大小
 select_dir, project_dir = './disk/select/', './disk/project/'  # 关系选择、投影结果所在的磁盘目录
-nlj_dir = './disk/join/nlj/'  # 关系连接磁盘目录
-sort_temp_dir = './disk/join/sort/sort/'  # 归并排序连接算法中得到的已排序的磁盘文件目录
-sort_res_dir = './disk/join/sort/res/'
-hash_temp_dir = './disk/join/hash/hash/'
-hash_res_dir = './disk/join/hash/res/'
-blk_num = 8  # 缓冲区大小
+sort_temp_dir, sort_res_dir = './disk/join/sort/sort/', './disk/join/sort/res/'
+hash_temp_dir, hash_res_dir = './disk/join/hash/hash/', './disk/join/hash/res/'
 
 
 def linear_search(buffer: extmem.Buffer):  # 关系选择：线性搜索R.A=40, S.C=60；并将结果写入到磁盘中
-    two_items, buffer.io_num = [('r', extmem.blk_num1, [], 40), ('s', extmem.blk_num2, [], 60)], 0
+    extmem.drop_blk_in_dir(select_dir)  # 删除文件夹下的所有模拟磁盘文件
+    two_items, buffer.io_num, count, res = [('r', extmem.blk_num1, 40), ('s', extmem.blk_num2, 60)], 0, 0, []
     for item in two_items:
         for disk_idx in range(item[1]):  # item[1]表示关系占用的物理磁盘块数
             index = buffer.load_blk('%s%s%d.blk' % (disk_dir, item[0], disk_idx))  # 加载磁盘块内容到缓冲区中
             for data in buffer.data[index]:
-                data0, data1 = map(int, data.split())
-                if data0 == item[3]:
-                    item[2].append((data0, data1))  # item[2]表示关系选择的结果
+                data0, data1 = data.split()
+                if int(data0) == item[2]:
+                    res.append(data)  # item[2]表示关系选择的结果
+                    if len(res) == tuple_num:
+                        buffer.write_buffer(res, '%s%s%d.blk' % (select_dir, item[0], count))
+                        res, count = [], count + 1
             buffer.free_blk(0)
-    all_data = [('r', two_items[0][2]), ('s', two_items[1][2])]
-    extmem.drop_blk_in_dir(select_dir)  # 删除文件夹下的所有模拟磁盘文件
-    for data in all_data:
-        for idx in range(ceil(len(data[1]) / extmem.tuple_num)):  # 写入结果所用的磁盘块数
-            with open('%s%s%d.blk' % (select_dir, data[0], idx), 'w') as f:
-                blk_data = ['%d %d' % item for item in data[1][idx * extmem.tuple_num:(idx + 1) * extmem.tuple_num]]
-                f.write('\n'.join(blk_data))
-    return two_items[0][2], two_items[1][2]
+        if res:
+            buffer.write_buffer(res, '%s%s%d.blk' % (select_dir, item[0], count))
 
 
-def relation_project(buffer: extmem.Buffer):  # 关系投影，对R的A属性进行投影并需要去重，并将结果写入到磁盘中
-    r_res, buffer.io_num = [], 0  # 投影选择的结果
-    for disk_idx in range(extmem.blk_num1):
+def relation_project(buffer: Buffer):  # 关系投影，对R的A属性进行投影并需要去重，并将结果写入到磁盘中
+    extmem.drop_blk_in_dir(project_dir)  # 删除文件夹下的所有模拟磁盘文件
+    buffer.io_num, res, count, = 0, [], 0  # 投影选择的结果
+    all_res = set()  # todo 排序去重可能属于外排序类型
+    for disk_idx in range(blk_num1):
         index = buffer.load_blk('%sr%d.blk' % (disk_dir, disk_idx))  # 加载磁盘块内容到缓冲区中
         for data in buffer.data[index]:
-            if data.split()[0] not in r_res:
-                r_res.append(data.split()[0])
+            if data.split()[0] not in all_res:
+                res.append(data.split()[0])
+                all_res.add(data.split()[0])
+                if len(res) == tuple_num * 2:
+                    buffer.write_buffer(res, '%sr%d.blk' % (project_dir, count))
+                    res, count = [], count + 1
         buffer.free_blk(0)
-    extmem.drop_blk_in_dir(project_dir)  # 删除文件夹下的所有模拟磁盘文件
-    for idx in range(ceil(len(r_res) / extmem.tuple_num / 2)):
-        with open('%sr%d.blk' % (project_dir, idx), 'w')as f:
-            f.write('\n'.join(r_res[idx * extmem.tuple_num * 2:(idx + 1) * extmem.tuple_num * 2]))
+    if res:
+        buffer.write_buffer(res, '%sr%d.blk' % (project_dir, count))
 
 
 def nested_loop_join(buffer: extmem.Buffer):
-    res, buffer.io_num = [], 0
-    for outer_idx in range(extmem.blk_num1):  # 关系R做外层for循环内容
-        outer_data = buffer.data[buffer.load_blk('%sr%d.blk' % (disk_dir, outer_idx))]  # 关系S做内层for循环内容
-        for inner_idx in range(extmem.blk_num2):
-            inner_data = buffer.data[buffer.load_blk('%ss%d.blk' % (disk_dir, inner_idx))]
-            for outer_item in outer_data:
-                r_a, r_b = outer_item.split()
-                for inner_item in inner_data:
-                    s_c, s_d = inner_item.split()
-                    if r_a == s_c:
-                        res.append(' '.join([r_a, r_b, s_c, s_d]))
-            buffer.free_blk(1)
-        buffer.free_blk(0)
     extmem.drop_blk_in_dir(nlj_dir)  # 删除文件夹下的所有模拟磁盘文件
-    for idx in range(ceil(len(res) / floor(extmem.tuple_num / 2))):
-        with open('%srs%d.blk' % (nlj_dir, idx), 'w') as f:
-            f.write('\n'.join(res[idx * floor(extmem.tuple_num / 2):(idx + 1) * floor(extmem.tuple_num / 2)]))
+    res, buffer.io_num, count = [], 0, 0
+    for outer_idx in range(ceil(blk_num1 / (blk_num - 2))):  # 关系R做外层for循环内容
+        start, end, outer_data = outer_idx * (blk_num - 2), min((outer_idx + 1) * (blk_num - 2), blk_num1), []
+        outer_data = [buffer.data[buffer.load_blk('%sr%d.blk' % (disk_dir, idx))] for idx in range(start, end)]
+        for inner_idx in range(extmem.blk_num2):  # 关系S做内层for循环内容
+            inner_data = buffer.data[buffer.load_blk('%ss%d.blk' % (disk_dir, inner_idx))]
+            # 内存中执行连接操作
+            for outer_lst in outer_data:
+                for outer_item in outer_lst:
+                    r_a, r_b = outer_item.split()
+                    for inner_item in inner_data:
+                        s_c, s_d = inner_item.split()
+                        if r_a == s_c:
+                            res.append('%s %s' % (outer_item, inner_item))
+                            if len(res) == int(tuple_num / 2):
+                                buffer.write_buffer(res, '%srs%d.blk' % (nlj_dir, count))
+                                res, count = [], count + 1
+            buffer.free_blk(len(outer_data))
+        buffer.data_occupy = [False] * blk_num
+    if res:
+        buffer.write_buffer(res, '%srs%d.blk' % (nlj_dir, count))  # 将结果磁盘上的剩余数据写入磁盘
 
 
 def sort_merge_join(buffer: extmem.Buffer):
@@ -199,7 +204,6 @@ def hash_join(buffer: extmem.Buffer):
                 buffer.write_buffer(hash_blk[idx], addr)
                 item[2][idx].append(addr)
                 hash_blk[idx] = []
-    del hash_idx, hash_blk
 
     # 进行连接操作，将缓存中的blk_num-2块保存第i个桶的内容，1块作为输出，1块保存另外1个关系
     res, count, buffer.data_occupy = [], 0, [False] * blk_num
@@ -219,11 +223,12 @@ def hash_join(buffer: extmem.Buffer):
                     if r_data.split()[0] == s_data.split()[0]:
                         res.append('%s %s' % (r_data, s_data))
                         if len(res) == int(tuple_num / 2):
-                            buffer.write_buffer(res, '%srs%d' % (hash_res_dir, count))
-                            res = []
-                            count += 1
+                            buffer.write_buffer(res, '%srs%d.blk' % (hash_res_dir, count))
+                            res, count = [], count + 1
             buffer.free_blk(ceil(len(r_buffer_data) / tuple_num))
         buffer.data_occupy = [False] * blk_num
+    if res:
+        buffer.write_buffer(res, '%srs%d.blk' % (hash_res_dir, count))  # 将结果磁盘上的剩余数据写入磁盘
 
 
 def get_res():  # 直接计算自然连接的结果，用于测试其他算法的正确性
@@ -251,7 +256,7 @@ def main():
     print('sort-merge-join算法的磁盘IO次数为：%d' % buffer.io_num)
     hash_join(buffer)
     print('hash-join算法的磁盘IO次数为：%d' % buffer.io_num)
-    # get_res()
+    print('测试的连接块数为：%d' % ceil(len(get_res()) / int(tuple_num / 2)))
 
 
 if __name__ == '__main__':
