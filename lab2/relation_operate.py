@@ -1,8 +1,8 @@
 # !/usr/bin/python
 # -*- coding: utf-8 -*-
-from extmem import disk_dir, tuple_num, blk_num2, blk_num1
+from lab2.extmem import disk_dir, tuple_num, blk_num2, blk_num1
 from math import ceil, floor
-import extmem
+from lab2 import extmem
 
 select_dir, project_dir = './disk/select/', './disk/project/'  # 关系选择、投影结果所在的磁盘目录
 nlj_dir = './disk/join/nlj/'  # 关系连接磁盘目录
