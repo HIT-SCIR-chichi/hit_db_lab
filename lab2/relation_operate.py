@@ -55,8 +55,7 @@ def nested_loop_join(buffer: extmem.Buffer):
         outer_data = [buffer.data[buffer.load_blk('%sr%d.blk' % (disk_dir, idx))] for idx in range(start, end)]
         for inner_idx in range(extmem.blk_num2):  # 关系S做内层for循环内容
             inner_data = buffer.data[buffer.load_blk('%ss%d.blk' % (disk_dir, inner_idx))]
-            # 内存中执行连接操作
-            for outer_lst in outer_data:
+            for outer_lst in outer_data:  # 内存中执行连接操作
                 for outer_item in outer_lst:
                     r_a, r_b = outer_item.split()
                     for inner_item in inner_data:
@@ -113,7 +112,6 @@ def sort_merge_join(buffer: extmem.Buffer):
                 if len(sorted_blk) == extmem.tuple_num:
                     buffer.write_buffer(sorted_blk, '%s%s%d.blk' % (sort_temp_dir, data[0], count))
                     count, sorted_blk = count + 1, []
-    # del idx, index, idy, idx_lst, num, stop, sorted_blk, item, digit, data, blk_data, flag, all_data
 
     # 执行连接算法
     extmem.drop_blk_in_dir(sort_res_dir)  # 删除文件夹下的所有模拟磁盘文件
@@ -183,14 +181,15 @@ def sort_merge_join(buffer: extmem.Buffer):
 def hash_join(buffer: extmem.Buffer):
     buffer.__init__(blk_num)
     extmem.drop_blk_in_dir(hash_temp_dir)
-    # 对关系R进行hash操作，将缓存中的blk_num-2块作为Hash桶，1块作为输出，1块保存另外1个关系
-    all_data, hash_blk = [('r', blk_num1, [[] for idx in range(blk_num - 2)]),
-                          ('s', blk_num2, [[] for idx in range(blk_num - 2)])], [[] for idx in range(blk_num - 2)]
+    # 对关系R进行hash操作，将缓存中的blk_num-1块作为Hash桶，1块作为输出
+    hash_num = blk_num - 1
+    all_data, hash_blk = [('r', blk_num1, [[] for idx in range(hash_num)]),
+                          ('s', blk_num2, [[] for idx in range(hash_num)])], [[] for idx in range(hash_num)]
     for item in all_data:
         for idx in range(item[1]):
             blk_data = buffer.data[buffer.load_blk('%s%s%d.blk' % (disk_dir, item[0], idx))]
             for data in blk_data:
-                hash_idx = int(data.split()[0]) % (blk_num - 2)
+                hash_idx = int(data.split()[0]) % hash_num
                 hash_blk[hash_idx].append(data)
                 if len(hash_blk[hash_idx]) == tuple_num:  # HASH桶已满，需要输出
                     addr = '%s%s%d_%d.blk' % (hash_temp_dir, item[0], hash_idx, len(item[2][hash_idx]))
@@ -198,17 +197,16 @@ def hash_join(buffer: extmem.Buffer):
                     item[2][hash_idx].append(addr)
                     hash_blk[hash_idx] = []
             buffer.free_blk(0)
-        for idx in range(blk_num - 2):
+        for idx in range(hash_num):
             if hash_blk[idx]:
                 addr = '%s%s%d_%d.blk' % (hash_temp_dir, item[0], idx, len(item[2][idx]))
                 buffer.write_buffer(hash_blk[idx], addr)
                 item[2][idx].append(addr)
                 hash_blk[idx] = []
-
     # 进行连接操作，将缓存中的blk_num-2块保存第i个桶的内容，1块作为输出，1块保存另外1个关系
     res, count, buffer.data_occupy = [], 0, [False] * blk_num
     extmem.drop_blk_in_dir(hash_res_dir)
-    for idx in range(blk_num - 2):
+    for idx in range(hash_num):
         r_buffer_data, s_buffer_data, flag = [], [], False
         for addr in all_data[0][2][idx]:
             r_buffer_data.extend(buffer.data[buffer.load_blk(addr)])

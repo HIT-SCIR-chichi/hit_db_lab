@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
         root = get_tree(queries[self.ui.query_box.currentIndex()])
         if self.ui.optimize_on.isChecked():
             root = optimize(root)
-        output_tree(root)
+        # output_tree(root)
         tree_stack, item_stack = [root], [QTreeWidgetItem(self.ui.parse_tree)]
         while tree_stack:
             tree_node, item_node = tree_stack.pop(0), item_stack.pop(0)
